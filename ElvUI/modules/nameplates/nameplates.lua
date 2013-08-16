@@ -111,20 +111,23 @@ function NP:OnUpdate(elapsed)
 		NP:ScanFrames(WorldFrame:GetChildren())
 	end
 
-	for blizzPlate, plate in pairs(NP.CreatedPlates) do
+	--[[for blizzPlate, plate in pairs(NP.CreatedPlates) do
 		if blizzPlate:IsShown() then
-			plate:SetPoint("CENTER", WorldFrame, "BOTTOMLEFT", blizzPlate:GetCenter())
+			local x, y = select(2, blizzPlate.healthBar:GetPoint()):GetCenter()
+			plate:SetPoint("CENTER", WorldFrame, "BOTTOMLEFT", x - 20, y)
 		else
 			plate:Hide()
 		end
-	end
+	end]]
 
 	if(self.elapsed and self.elapsed > 0.2) then
 		NP.NumNonTransparentPlates = 0
-		NP:ForEachPlate('SetAlpha')
-		NP:ForEachPlate('SetUnitInfo')
-		NP:ForEachPlate('ColorizeAndScale')
-		NP:ForEachPlate('SetLevel')
+		for blizzPlate, plate in pairs(NP.CreatedPlates) do
+			NP.SetAlpha(blizzPlate, plate)
+			NP.SetUnitInfo(blizzPlate, plate)
+			NP.ColorizeAndScale(blizzPlate, plate)
+			NP.SetLevel(blizzPlate, plate)
+		end
 
 		self.elapsed = 0
 	else
@@ -204,13 +207,11 @@ function NP:CheckArenaHealers()
 	end
 end
 
-function NP:SetLevel()
+function NP:SetLevel(myPlate)
 	local region = select(4, self:GetRegions())
 	if region and region:GetObjectType() == 'FontString' then
 		self.level = region
 	end
-
-	local myPlate = NP.CreatedPlates[self]
 
 	if self.level:IsShown() then
 		local level, elite, boss, mylevel = self.level:GetObjectType() == 'FontString' and tonumber(self.level:GetText()) or nil, self.eliteIcon:IsShown(), self.bossIcon:IsShown(), UnitLevel("player")
@@ -281,8 +282,7 @@ function NP:GetThreatReaction(frame)
 end
 
 local color, scale
-function NP:ColorizeAndScale()
-	local myPlate = NP.CreatedPlates[self]
+function NP:ColorizeAndScale(myPlate)
 	local unitType = NP:GetReaction(self)
 	local scale = 1
 
@@ -349,8 +349,7 @@ function NP:ColorizeAndScale()
 	end
 end
 
-function NP:SetAlpha()
-	local myPlate = NP.CreatedPlates[self]
+function NP:SetAlpha(myPlate)
 	if self:GetAlpha() < 1 then
 		myPlate:SetAlpha(NP.db.nonTargetAlpha)
 	else
@@ -359,9 +358,7 @@ function NP:SetAlpha()
 	end
 end
 
-function NP:SetUnitInfo()
-	local myPlate = NP.CreatedPlates[self]
-
+function NP:SetUnitInfo(myPlate)
 	if self:GetAlpha() == 1 and UnitExists("target") and UnitName("target") == self.name:GetText() and NP.NumNonTransparentPlates == 1 then
 		self.guid = UnitGUID("target")
 		self.unit = "target"
@@ -473,6 +470,8 @@ function NP:OnShow()
 	local myPlate = NP.CreatedPlates[self]
 	self.isSmall = (self.healthBar:GetEffectiveScale() < 1 and NP.db.smallPlates)
 
+	myPlate.healthBar:SetPoint('BOTTOM', self, 'BOTTOM', -5, 5)
+
 	if(self.isSmall) then
 		myPlate.healthBar:SetSize(self.healthBar:GetWidth() * (self.healthBar:GetEffectiveScale() * 1.25), NP.db.healthBar.height)
 	end
@@ -496,8 +495,7 @@ function NP:OnShow()
 	end
 	
 	NP.HealthBar_OnValueChanged(self.healthBar, self.healthBar:GetValue())
-	NP.ColorizeAndScale(self)
-	
+
 	--Check to see if its possible to update auras/comboPoints via raid icon or class color when a plate is shown.
 	if(self.raidIcon:IsShown()) then
 		NP:CheckRaidIcon(self)
@@ -506,6 +504,8 @@ function NP:OnShow()
 	else
 		self.allowCheck = true
 	end
+
+	NP.ColorizeAndScale(self, myPlate)
 end
 
 function NP:OnHide()
@@ -535,6 +535,9 @@ function NP:OnHide()
 	for i=1, MAX_COMBO_POINTS do
 		myPlate.cPoints[i]:Hide()
 	end	
+
+	myPlate:Hide();
+	--myPlate:SetPoint("BOTTOMLEFT", self, "BOTTOMLEFT")
 end
 
 function NP:HealthBar_OnSizeChanged(width, height)
@@ -775,6 +778,8 @@ function NP:CreatePlate(frame)
 	auraHeader:SetHeight(32); auraHeader:Show()
 	auraHeader:SetPoint('BOTTOMRIGHT', myPlate.healthBar, 'TOPRIGHT', 0, 10)
 	auraHeader:SetPoint('BOTTOMLEFT', myPlate.healthBar, 'TOPLEFT', 0, 10)
+	auraHeader:SetFrameStrata("BACKGROUND")
+	auraHeader:SetFrameLevel(0)	
 	
 	auraHeader.PollFunction = NP.UpdateAuraTime
 	auraHeader.AuraIconFrames = {}
@@ -987,8 +992,7 @@ end
 
 function NP:UpdateComboPointsByUnitID(unitID)
 	local guid = UnitGUID(unitID)
-	if(not guid) then return end
-	
+	if (not guid) then return end
 	NP.ComboPoints[guid] = GetComboPoints(UnitHasVehicleUI('player') and 'vehicle' or 'player', unitID)
 
 	local frame = NP:SearchForFrame(guid)
