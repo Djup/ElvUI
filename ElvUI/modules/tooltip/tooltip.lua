@@ -71,20 +71,20 @@ function TT:SetStatusBarAnchor(pos)
 	GameTooltipStatusBar:ClearAllPoints()
 
 	if pos == 'BOTTOM' then
-		GameTooltipStatusBar:Point("TOPLEFT", GameTooltipStatusBar:GetParent(), "BOTTOMLEFT", E.Border, -(E.Spacing * 3))
-		GameTooltipStatusBar:Point("TOPRIGHT", GameTooltipStatusBar:GetParent(), "BOTTOMRIGHT", -E.Border, -(E.Spacing * 3))			
+		GameTooltipStatusBar:SetPoint("TOPLEFT", GameTooltipStatusBar:GetParent(), "BOTTOMLEFT", E.Border, -(E.Spacing * 3))
+		GameTooltipStatusBar:SetPoint("TOPRIGHT", GameTooltipStatusBar:GetParent(), "BOTTOMRIGHT", -E.Border, -(E.Spacing * 3))			
 	else	
-		GameTooltipStatusBar:Point("BOTTOMLEFT", GameTooltipStatusBar:GetParent(), "TOPLEFT", E.Border, (E.Spacing * 3))
-		GameTooltipStatusBar:Point("BOTTOMRIGHT", GameTooltipStatusBar:GetParent(), "TOPRIGHT", -E.Border, (E.Spacing * 3))			
+		GameTooltipStatusBar:SetPoint("BOTTOMLEFT", GameTooltipStatusBar:GetParent(), "TOPLEFT", E.Border, (E.Spacing * 3))
+		GameTooltipStatusBar:SetPoint("BOTTOMRIGHT", GameTooltipStatusBar:GetParent(), "TOPRIGHT", -E.Border, (E.Spacing * 3))			
 	end	
 	
 	if GameTooltipStatusBar.text then
 		GameTooltipStatusBar.text:ClearAllPoints()
 		
 		if pos == 'BOTTOM' then
-			GameTooltipStatusBar.text:Point("CENTER", GameTooltipStatusBar, 0, -3)
+			GameTooltipStatusBar.text:SetPoint("CENTER", GameTooltipStatusBar, 0, -3)
 		else
-			GameTooltipStatusBar.text:Point("CENTER", GameTooltipStatusBar, 0, 3)	
+			GameTooltipStatusBar.text:SetPoint("CENTER", GameTooltipStatusBar, 0, 3)	
 		end
 	end
 end
@@ -112,11 +112,11 @@ function TT:GameTooltip_SetDefaultAnchor(tt, parent)
 			tt:ClearAllPoints()
 			
 			if ElvUI_ContainerFrame and ElvUI_ContainerFrame:IsShown() then
-				tt:Point('BOTTOMRIGHT', ElvUI_ContainerFrame, 'TOPRIGHT', 0, 18)	
+				tt:SetPoint('BOTTOMRIGHT', ElvUI_ContainerFrame, 'TOPRIGHT', 0, 18)	
 			elseif RightChatPanel:GetAlpha() == 1 and RightChatPanel:IsShown() then
-				tt:Point('BOTTOMRIGHT', RightChatPanel, 'TOPRIGHT', 0, 18)		
+				tt:SetPoint('BOTTOMRIGHT', RightChatPanel, 'TOPRIGHT', 0, 18)		
 			else
-				tt:Point('BOTTOMRIGHT', RightChatPanel, 'BOTTOMRIGHT', 0, 18)
+				tt:SetPoint('BOTTOMRIGHT', RightChatPanel, 'BOTTOMRIGHT', 0, 18)
 			end
 			
 			TT:SetStatusBarAnchor('BOTTOM')
@@ -133,13 +133,13 @@ function TT:GameTooltip_SetDefaultAnchor(tt, parent)
 			
 			local point = E:GetScreenQuadrant(TooltipMover)
 			if point == "TOPLEFT" then
-				tt:Point("TOPLEFT", TooltipMover, "BOTTOMLEFT", 1, -4)
+				tt:SetPoint("TOPLEFT", TooltipMover, "BOTTOMLEFT", 1, -4)
 			elseif point == "TOPRIGHT" then
-				tt:Point("TOPRIGHT", TooltipMover, "BOTTOMRIGHT", -1, -4)
+				tt:SetPoint("TOPRIGHT", TooltipMover, "BOTTOMRIGHT", -1, -4)
 			elseif point == "BOTTOMLEFT" or point == "LEFT" then
-				tt:Point("BOTTOMLEFT", TooltipMover, "TOPLEFT", 1, 18)
+				tt:SetPoint("BOTTOMLEFT", TooltipMover, "TOPLEFT", 1, 18)
 			else
-				tt:Point("BOTTOMRIGHT", TooltipMover, "TOPRIGHT", -1, 18)
+				tt:SetPoint("BOTTOMRIGHT", TooltipMover, "TOPRIGHT", -1, 18)
 			end			
 			
 			TT:SetStatusBarAnchor('BOTTOM')
@@ -481,25 +481,28 @@ function TT:GameTooltip_OnTooltipSetUnit(tt)
 		self.currentGUID = GUID
 		self.currentName = name
 		self.currentUnit = unit
-		if (UnitIsUnit(unit,"player")) then
-			iLevel = TT:GetItemLvL('player') or 0
-			talentSpec = TT:GetTalentSpec() or ''
-		else
-			for index, _ in pairs(self.InspectCache) do
-				local inspectCache = self.InspectCache[index]
-				if inspectCache.GUID == GUID then
-					iLevel = inspectCache.ItemLevel or 0
-					talentSpec = inspectCache.TalentSpec or ""
-					lastUpdate = inspectCache.LastUpdate and abs(inspectCache.LastUpdate - floor(GetTime())) or 30
-				end
-			end	
-			
-			-- Queue an inspect request
-			if unit and (CanInspect(unit)) and (not self:IsInspectFrameOpen()) then
-				local lastInspectTime = (GetTime() - self.lastInspectRequest);
-				self.UpdateInspect.nextUpdate = (lastInspectTime > INSPECT_FREQ) and INSPECT_DELAY or (INSPECT_FREQ - lastInspectTime + INSPECT_DELAY);
-				self.UpdateInspect:Show();
-			end			
+
+		if IsShiftKeyDown() then
+			if (UnitIsUnit(unit,"player")) then
+				iLevel = TT:GetItemLvL('player') or 0
+				talentSpec = TT:GetTalentSpec() or ''
+			else
+				for index, _ in pairs(self.InspectCache) do
+					local inspectCache = self.InspectCache[index]
+					if inspectCache.GUID == GUID then
+						iLevel = inspectCache.ItemLevel or 0
+						talentSpec = inspectCache.TalentSpec or ""
+						lastUpdate = inspectCache.LastUpdate and abs(inspectCache.LastUpdate - floor(GetTime())) or 30
+					end
+				end	
+				
+				-- Queue an inspect request
+				if unit and (CanInspect(unit)) and (not self:IsInspectFrameOpen()) then
+					local lastInspectTime = (GetTime() - self.lastInspectRequest);
+					self.UpdateInspect.nextUpdate = (lastInspectTime > INSPECT_FREQ) and INSPECT_DELAY or (INSPECT_FREQ - lastInspectTime + INSPECT_DELAY);
+					self.UpdateInspect:Show();
+				end			
+			end
 		end
 		
 		if UnitIsAFK(unit) then
@@ -578,6 +581,7 @@ function TT:GameTooltip_OnTooltipSetUnit(tt)
 	end
 	
 	if E.db.tooltip.whostarget then token = unit TT:AddTargetedBy() end
+
 
 	GameTooltip:Show()
 	GameTooltip.forceRefresh = true
